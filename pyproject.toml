@@ -1,0 +1,23 @@
+[project]
+name = "invoicing-api"
+version = "0.1.0"
+description = "Simple invoicing OpenAPI backend."
+authors = [
+    {name = "Mouad Kommir",email = "mouadkommir@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "djangorestframework (>=3.15.2,<4.0.0)",
+    "pylibutils (>=0.1.0,<0.2.0)",
+    "pillow (>=11.1.0,<12.0.0)"
+]
+
+
+[poetry]
+package-mode = false
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
