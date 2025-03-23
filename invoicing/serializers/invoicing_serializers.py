@@ -1,31 +1,21 @@
 from rest_framework import serializers
 
-from django.contrib.auth.models import User, Group
 from invoicing.models import Customer, Invoice
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
-
-    class Meta:
-        model = User
-        fields = ["url", "username", "email", "groups"]
-
-
-class GroupSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = Group
-        fields = ["url", "name"]
-
-
 class CustomerSerializer(serializers.HyperlinkedModelSerializer):
-
     class Meta:
         model = Customer
         fields = ["url", "user", "name", "email", "image"]
 
 
-class InvoiceSerializer(serializers.HyperlinkedModelSerializer):
+class CustomerListSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ["url", "name", "email", "image"]
 
+
+class InvoiceSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Invoice
         fields = ["url", "customer", "amount", "date", "status"]
@@ -51,3 +41,9 @@ class InvoiceSerializer(serializers.HyperlinkedModelSerializer):
         instance.status = validated_data.get("status", instance.status)
         instance.save()
         return instance
+
+
+class InvoiceListSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = ["url", "customer", "amount", "date", "status"]
