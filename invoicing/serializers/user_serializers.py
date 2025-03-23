@@ -1,8 +1,11 @@
 from rest_framework import serializers
 
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
 
 from invoicing.models import Customer
+
+User = get_user_model()
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):

@@ -1,10 +1,12 @@
 from django.db import models
-from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import get_user_model
 
 from pylibutils.utils import naive_utcnow
 
 from invoicing.settings import INVOICE_STATUS_CHOICES
+
+User = get_user_model()
 
 
 class Customer(models.Model):

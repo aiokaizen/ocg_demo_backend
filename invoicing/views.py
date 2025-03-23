@@ -1,4 +1,6 @@
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
+
 from rest_framework import permissions, viewsets
 
 from invoicing.models import Customer, Invoice
@@ -8,6 +10,8 @@ from invoicing.serializers import (
     UserSerializer,
     GroupSerializer,
 )
+
+User = get_user_model()
 
 
 class UserViewSet(viewsets.ModelViewSet):
