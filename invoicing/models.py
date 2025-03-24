@@ -25,6 +25,20 @@ class Customer(models.Model):
         return self.name
 
 
+class Supplier(models.Model):
+    class Meta:
+        verbose_name = _("Supplier")
+        verbose_name_plural = _("Suppliers")
+
+    user = models.ForeignKey(
+        User, verbose_name=_("User"), on_delete=models.PROTECT, null=True, blank=True
+    )
+    image = models.ImageField(_("Image URL"), null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.first_name} {self.user.last_name}"
+
+
 class Invoice(models.Model):
     class Meta:
         verbose_name = _("Invoice")
@@ -36,6 +50,16 @@ class Invoice(models.Model):
         verbose_name=_("Customer"),
         on_delete=models.PROTECT,
         related_name="invoices",
+        null=True,
+        blank=True,
+    )
+    supplier = models.ForeignKey(
+        Supplier,
+        verbose_name=_("Supplier"),
+        on_delete=models.PROTECT,
+        related_name="invoices",
+        null=True,
+        blank=True,
     )
     amount = models.DecimalField(_("Amount"), decimal_places=2, max_digits=11)
     date = models.DateTimeField(_("Invoice date"), default=naive_utcnow, blank=True)
@@ -45,3 +69,20 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"{self.status} | {self.amount} {self.customer}"
+
+    @property
+    def is_supplier_invoice(self):
+        return self.supplier is not None
+
+    def save(self, *args, **kwargs):
+        if not self.supplier and not self.customer:
+            raise Exception(_("A supplier or customer must be provided."))
+
+        if self.supplier and self.customer:
+            raise Exception(
+                _(
+                    "Only the supplier or the customer must be provided. You can not set both."
+                )
+            )
+
+        return super().save(*args, **kwargs)

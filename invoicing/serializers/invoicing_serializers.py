@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from invoicing.models import Customer, Invoice
+from invoicing.models import Customer, Invoice, Supplier
 
 
 class CustomerSerializer(serializers.HyperlinkedModelSerializer):
@@ -15,10 +15,16 @@ class CustomerListSerializer(serializers.HyperlinkedModelSerializer):
         fields = ["url", "name", "email", "image"]
 
 
+class SupplierSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Supplier
+        fields = ["url", "user", "image"]
+
+
 class InvoiceSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Invoice
-        fields = ["url", "customer", "amount", "date", "status"]
+        fields = ["url", "customer", "supplier", "amount", "date", "status"]
 
     def create(self, validated_data):
         """
@@ -36,6 +42,7 @@ class InvoiceSerializer(serializers.HyperlinkedModelSerializer):
         #         setattr(instance, k)
 
         instance.customer = validated_data.get("customer", instance.customer)
+        instance.supplier = validated_data.get("supplier", instance.supplier)
         instance.amount = validated_data.get("amount", instance.amount)
         instance.date = validated_data.get("date", instance.date)
         instance.status = validated_data.get("status", instance.status)

@@ -3,13 +3,14 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import permissions, viewsets
 
-from invoicing.models import Customer, Invoice
+from invoicing.models import Customer, Invoice, Supplier
 from invoicing.serializers import (
     InvoiceSerializer,
     CustomerSerializer,
     UserSerializer,
     GroupSerializer,
 )
+from invoicing.serializers.invoicing_serializers import SupplierSerializer
 
 User = get_user_model()
 
@@ -41,6 +42,16 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     queryset = Customer.objects.all().order_by("name")
     serializer_class = CustomerSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class SupplierViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows suppliers to be viewed or edited.
+    """
+
+    queryset = Supplier.objects.all().order_by("user")
+    serializer_class = SupplierSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 

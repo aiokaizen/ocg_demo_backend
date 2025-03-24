@@ -9,8 +9,7 @@ from django.db.utils import IntegrityError
 
 from faker import Faker
 
-from invoicing.models import Customer, Invoice
-from invoicing.settings import INVOICE_STATUS_CHOICES
+from invoicing.models import Customer, Invoice, Supplier
 
 User = get_user_model()
 
@@ -38,6 +37,14 @@ class Command(BaseCommand):
             # Attribute some permissions.
             pass
 
+        # Create the group 'SUPPLIER' if it does not exist
+        suppliers_group, suppliers_created = Group.objects.get_or_create(
+            name="SUPPLIER"
+        )
+        if suppliers_created:
+            # Attribute some permissions.
+            pass
+
         # Create the superuser and the admin users if they don't exist
         try:
             User.objects.get(username="superuser")
@@ -53,7 +60,7 @@ class Command(BaseCommand):
             logging.info("superuser was created successfully!")
 
         fake = Faker()
-        user_count = 100
+        user_count = 500
         firstnames = [fake.first_name() for _ in range(user_count)]
         lastnames = [fake.last_name() for _ in range(user_count)]
         email_providers = [
@@ -72,7 +79,7 @@ class Command(BaseCommand):
         for i in range(user_count):
             try:
                 email_suffix = random.choice(email_suffixes)
-                username = f"{firstnames[i][0]}.{lastnames[i].replace(' ', '')}".lower()
+                username = f"{firstnames[i]}.{lastnames[i].replace(' ', '')}".lower()
                 user = User.objects.create_user(
                     username=username,
                     email=f"{username}@{email_suffix}",
@@ -93,12 +100,31 @@ class Command(BaseCommand):
         if error_users:
             logging.error(f"{error_users} users were not created due to duplication.")
 
+        # Create supplier users
+        supplier_count = 50
+        firstnames = [fake.unique.first_name() for _ in range(supplier_count)]
+        lastnames = [fake.unique.last_name() for _ in range(supplier_count)]
+        for i in range(supplier_count):
+            username = f"{firstnames[i]}.{lastnames[i].replace(' ', '')}".lower()
+            email_suffix = random.choice(email_suffixes)
+            user = User.objects.create_user(
+                username=username,
+                email=f"{username}@{email_suffix}",
+                first_name=firstnames[i],
+                last_name=lastnames[i],
+                password="user_pass",
+            )
+            user.groups.add(suppliers_group)
+            logging.warning(
+                f"User {i + 1} ({firstnames[i]} {lastnames[i]}) was created successfully!"
+            )
+
         # Create system admins
         admin_count = 5
         firstnames = [fake.unique.first_name() for _ in range(admin_count)]
         lastnames = [fake.unique.last_name() for _ in range(admin_count)]
         for i in range(admin_count):
-            username = f"{firstnames[i][0]}.{lastnames[i].replace(' ', '')}".lower()
+            username = f"{firstnames[i]}.{lastnames[i].replace(' ', '')}".lower()
             user = User.objects.create_user(
                 username=username,
                 email=f"{username}@ocg.com",
@@ -111,6 +137,7 @@ class Command(BaseCommand):
                 f"Admin {i + 1} ({firstnames[i]} {lastnames[i]}) was created successfully!"
             )
 
+        # Create customers
         for user in User.objects.filter(groups=customers_group):
             full_name = f"{user.first_name} {user.last_name}"
             customer = Customer.objects.create(
@@ -120,8 +147,19 @@ class Command(BaseCommand):
             )
             logging.warning(f"Customer ({full_name}) was created successfully!")
 
+        # Create suppliers
+        for user in User.objects.filter(groups=suppliers_group):
+            full_name = f"{user.first_name} {user.last_name}"
+            Supplier.objects.create(
+                user=user,
+                image=f"https://robohash.org/{full_name.lower().replace(' ', '')}",
+            )
+            logging.warning(f"Supplier ({full_name}) was created successfully!")
+
         customers = Customer.objects.all()
+        suppliers = Supplier.objects.all()
         count_customers = Customer.objects.all().count()
+        count_suppliers = Supplier.objects.all().count()
         days_count = 90
         now = datetime.now()
         status_choices = [
@@ -130,10 +168,18 @@ class Command(BaseCommand):
         ]
         for days in range(days_count):
             today = now - timedelta(days=days)
-            for _ in range(count_customers * 100 // days_count):
+            for _ in range((count_customers + count_suppliers) * 1000 // days_count):
+                customer, supplier = None, None
+                if random.random() < 0.9:
+                    customer = random.choice(customers)
+                    amount = random.random() * 95 + 5
+                else:
+                    supplier = random.choice(suppliers)
+                    amount = random.random() * 1900 + 100
                 invoice = Invoice.objects.create(
-                    customer=random.choice(customers),
-                    amount=random.random() * 2980 + 20,
+                    customer=customer,
+                    supplier=supplier,
+                    amount=amount,
                     date=today,
                     status=random.choice(status_choices),
                 )

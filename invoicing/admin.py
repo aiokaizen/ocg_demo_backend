@@ -1,10 +1,15 @@
 from django.contrib import admin
 
-from invoicing.models import Invoice, Customer
+from invoicing.models import Invoice, Customer, Supplier
 
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Supplier)
+class SupplierAdmin(admin.ModelAdmin):
     pass
 
 
