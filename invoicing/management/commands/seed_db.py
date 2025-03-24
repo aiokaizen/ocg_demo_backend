@@ -175,7 +175,7 @@ class Command(BaseCommand):
         suppliers = Supplier.objects.all()
         count_customers = Customer.objects.all().count()
         count_suppliers = Supplier.objects.all().count()
-        days_count = 365 * 5
+        days_count = 365  # Generate 1 year of data
         now = datetime.now()
         status_choices = [
             *("paid " * 10).strip().split(" "),
@@ -184,9 +184,9 @@ class Command(BaseCommand):
         invoices = []
         for days in range(days_count):
             today = now - timedelta(days=days)
-            for _ in range((count_customers + count_suppliers) * 5000 // days_count):
+            for _ in range((count_customers + count_suppliers) * 1000 // days_count):
                 customer, supplier = None, None
-                if random.random() < 0.9:
+                if random.random() < 0.97:
                     customer = random.choice(customers)
                     amount = random.random() * 95 + 5
                 else:
@@ -202,6 +202,6 @@ class Command(BaseCommand):
                 invoices.append(invoice)
 
         start = time.time()
-        Invoice.objects.bulk_create(invoices, batch_size=1000)
+        Invoice.objects.bulk_create(invoices, batch_size=2500)
         end = time.time()
         logging.warning(f"Bulk insert took: {end - start}")
