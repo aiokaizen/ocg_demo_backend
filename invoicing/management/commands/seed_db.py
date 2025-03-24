@@ -1,3 +1,5 @@
+import time
+import threading
 from datetime import datetime, timedelta
 import logging
 import random
@@ -75,30 +77,43 @@ class Command(BaseCommand):
         ]
 
         # Create customer users
-        error_users = 0
-        for i in range(user_count):
-            try:
-                email_suffix = random.choice(email_suffixes)
-                username = f"{firstnames[i]}.{lastnames[i].replace(' ', '')}".lower()
-                user = User.objects.create_user(
-                    username=username,
-                    email=f"{username}@{email_suffix}",
-                    first_name=firstnames[i],
-                    last_name=lastnames[i],
-                    password="user_pass",
-                )
-                user.groups.add(customers_group)
-                logging.warning(
-                    f"User {i + 1} ({firstnames[i]} {lastnames[i]}) was created successfully!"
-                )
-            except IntegrityError:
-                error_users += 1
-                logging.error(
-                    f"User {i + 1} ({firstnames[i]} {lastnames[i]}) was not created!"
-                )
+        def create_users(start, end):
+            for i in range(start, end):
+                try:
+                    email_suffix = random.choice(email_suffixes)
+                    username = (
+                        f"{firstnames[i]}.{lastnames[i].replace(' ', '')}".lower()
+                    )
+                    user = User.objects.create_user(
+                        username=username,
+                        email=f"{username}@{email_suffix}",
+                        first_name=firstnames[i],
+                        last_name=lastnames[i],
+                        password="user_pass",
+                    )
+                    user.groups.add(customers_group)
+                    logging.warning(
+                        f"User {i + 1} ({firstnames[i]} {lastnames[i]}) was created successfully!"
+                    )
+                except IntegrityError:
+                    logging.error(
+                        f"User {i + 1} ({firstnames[i]} {lastnames[i]}) was not created!"
+                    )
 
-        if error_users:
-            logging.error(f"{error_users} users were not created due to duplication.")
+        threads = []
+        num_threads = 8
+        chunk_size = user_count // num_threads
+
+        for i in range(num_threads):
+            start = i * chunk_size
+            end = (i + 1) * chunk_size if i != num_threads - 1 else user_count
+            thread = threading.Thread(target=create_users, args=(start, end))
+            thread.start()
+            threads.append(thread)
+
+        # Wait for all threads to finish
+        for thread in threads:
+            thread.join()
 
         # Create supplier users
         supplier_count = 50
@@ -160,15 +175,16 @@ class Command(BaseCommand):
         suppliers = Supplier.objects.all()
         count_customers = Customer.objects.all().count()
         count_suppliers = Supplier.objects.all().count()
-        days_count = 90
+        days_count = 365 * 5
         now = datetime.now()
         status_choices = [
             *("paid " * 10).strip().split(" "),
             *("pending " * 3).strip().split(" "),
         ]
+        invoices = []
         for days in range(days_count):
             today = now - timedelta(days=days)
-            for _ in range((count_customers + count_suppliers) * 1000 // days_count):
+            for _ in range((count_customers + count_suppliers) * 5000 // days_count):
                 customer, supplier = None, None
                 if random.random() < 0.9:
                     customer = random.choice(customers)
@@ -176,11 +192,16 @@ class Command(BaseCommand):
                 else:
                     supplier = random.choice(suppliers)
                     amount = random.random() * 1900 + 100
-                invoice = Invoice.objects.create(
+                invoice = Invoice(
                     customer=customer,
                     supplier=supplier,
                     amount=amount,
                     date=today,
                     status=random.choice(status_choices),
                 )
-                logging.warning(f"Invoice ({invoice}) was created successfully!")
+                invoices.append(invoice)
+
+        start = time.time()
+        Invoice.objects.bulk_create(invoices, batch_size=1000)
+        end = time.time()
+        logging.warning(f"Bulk insert took: {end - start}")
