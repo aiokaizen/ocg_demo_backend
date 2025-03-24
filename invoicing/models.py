@@ -21,6 +21,9 @@ class Customer(models.Model):
     email = models.CharField(_("Email"), max_length=128)
     image = models.ImageField(_("Image URL"), null=True, blank=True)
 
+    def __str__(self):
+        return self.name
+
 
 class Invoice(models.Model):
     class Meta:
@@ -39,3 +42,6 @@ class Invoice(models.Model):
     status = models.CharField(
         _("Status"), choices=INVOICE_STATUS_CHOICES, default="pending", max_length=32
     )
+
+    def __str__(self):
+        return f"{self.status} | {self.amount} {self.customer}"
